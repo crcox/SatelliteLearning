@@ -5,7 +5,6 @@ load_session_data <- function(round,STUDY_INFO) {
   MetaData <- list()
   SessionData <- data.frame(subject=numeric(),session=numeric(),task=factor(NULL,levels=1:3,labels=c('study','train','test')),start=as.Date(character()),end=as.Date(character()),accuracy=numeric())
   for (f in filelist) {
-    print(f)
     fileparts <- strsplit(f,'_')[[1]]
     subjectnumber <- as.numeric(str_extract(fileparts[1],'[0-9]+'))
     filetype <- factor(fileparts[2],levels=c('data.txt','session.txt'),labels=c('data','session'))
@@ -16,7 +15,6 @@ load_session_data <- function(round,STUDY_INFO) {
       ## Count sessions completed
       sesix <- grep('Session number:',SESSION)
       nsessions <- length(sesix)
-      print(nsessions)
       SESSIONLIST <- list()
       sesix <- append(sesix,length(SESSION)+1)
       for (i in 1:nsessions) {
@@ -54,10 +52,6 @@ load_session_data <- function(round,STUDY_INFO) {
       # Extract Training (one-missing) proportion correct
       ProportionCorrectTraining <- c(NA,sapply(str_extract_all(SESSIONLIST[[1]][ix+1],'[0-1].[0-9]+'),as.numeric))
       
-      print(factor(rep(1:2,c(1,nrounds)),levels=1:3,labels=c('study','train','test')))
-      print(c(StudyDateTime,TrainingDateTimes_start))
-      print(c(TrainingDateTimes_start[1],TrainingDateTimes_end))
-      print(as.numeric(ProportionCorrectTraining))
       X <- data.frame(
         subject=subjectnumber,
         session=1,
