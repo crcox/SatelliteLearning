@@ -1,7 +1,7 @@
 load_response_data <- function(round, STUDY_INFO) {
   require(stringr)
   datadir = file.path(STUDY_INFO$datadir,sprintf('round%02d',round))
-  filelist = list.files(datadir)
+  filelist = list.files(datadir, pattern="s?[0-9]+_data.txt")
   ResponseData <- data.frame(
     subject=numeric(),
     session=numeric(),

@@ -1,7 +1,7 @@
 load_session_data <- function(round,STUDY_INFO) {
   require(stringr)
   datadir = file.path(STUDY_INFO$datadir,sprintf('round%02d',round))
-  filelist = list.files(datadir)
+  filelist = list.files(datadir, pattern="s?[0-9]+_session.txt")
   MetaData <- list()
   SessionData <- data.frame(subject=numeric(),session=numeric(),task=factor(NULL,levels=1:3,labels=c('study','train','test')),start=as.Date(character()),end=as.Date(character()),accuracy=numeric())
   for (f in filelist) {
@@ -38,7 +38,11 @@ load_session_data <- function(round,STUDY_INFO) {
       # Extract Training (one-missing) start times
       ix <- grep('Start inference with 1 parts missing',SESSIONLIST[[1]])
       temp <- str_split(SESSIONLIST[[1]][ix], pattern=' at ', n=2)
-      DateTimeStrings <- sapply(temp, str_trim)[2,]
+      if (f == "1025_session.txt") {
+        DateTimeStrings <- sapply(temp, str_trim)[2,] 
+      } else {
+        DateTimeStrings <- sapply(temp, str_trim)[2,]  
+      }
       TrainingDateTimes_start <- strptime(DateTimeStrings,'%m/%d/%Y %I:%M:%S %p')
       
       # Extract Training (one-missing) stop times
@@ -74,21 +78,46 @@ load_session_data <- function(round,STUDY_INFO) {
         # Extract Training (two-missing) stop times
         ix <- grep('Completed  [0-9]+ trials with 2 feature/s missing',SESSIONLIST[[i]])
         temp <- str_split(SESSIONLIST[[i]][ix], pattern=' at ', n=2)
-        DateTimeStrings <- sapply(temp, str_trim)[2,]
+        
+        DateTimeStrings <- tryCatch(
+          {
+            sapply(temp, str_trim)[2,]
+          },
+          error = function(cond) {
+            message(paste("Incomplete data for:", f))
+            message("Here's the original error message:")
+            message(cond)
+            cat('\n')
+            return(NA)
+          }
+        )
+        if (is.na(DateTimeStrings)) {next}
         DateTimeStrings <- str_replace(DateTimeStrings,'.[0-9]+$','')
         TestDateTimes_end <- strptime(DateTimeStrings,'%d-%b-%Y %H:%M:%S')
         ntests <- length(ix)
         # Extract Training (two-missing) proportion correct
         ProportionCorrectTest <- sapply(str_extract_all(SESSIONLIST[[i]][ix+1],'[0-1].[0-9]+'),as.numeric)
         
-        X <- data.frame(
-          subject=subjectnumber,
-          session=i,
-          task=factor(3,levels=1:3,labels=c('study','train','test')),
-          start=TestDateTimes_start,
-          end=TestDateTimes_end,
-          accuracy=ProportionCorrectTest
+        X <- tryCatch(
+          {
+            data.frame(
+              subject=subjectnumber,
+              session=i,
+              task=factor(3,levels=1:3,labels=c('study','train','test')),
+              start=TestDateTimes_start,
+              end=TestDateTimes_end,
+              accuracy=ProportionCorrectTest
+            )
+          },
+          error = function(cond) {
+            message(paste("Incomplete data for:", f))
+            message("Here's the original error message:")
+            message(cond)
+            cat('\n')
+            return(NA)
+          }
         )
+        if (is.na(X)) {next}
         SessionData <- rbind(SessionData,X)
       }
     }
